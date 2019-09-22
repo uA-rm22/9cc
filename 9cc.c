@@ -9,12 +9,7 @@ int main(int argc, char **argv) {
 
   printf(".global main\n");
 	printf("main:\n");
-	printf("str fp, [sp, #-4]!\n");
-	printf("add fp, sp, #0\n");
-  printf("  mov r3, #%d\n", atoi(argv[1]));
-	printf("mov r0, r3\n");
-	printf("add sp, fp, #0\n");
-	printf("ldr fp,[sp], #4\n");
+  printf("  mov r0, #%d\n", atoi(argv[1]));
   printf("  bx lr\n");
   return 0;
 }
