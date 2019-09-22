@@ -99,33 +99,6 @@ Token *tokenize(char *p){
 	return head.next;
 }
 
-int main(int argc, char **argv) {
-  if (argc != 2) {
-    fprintf(stderr, "引数の個数が正しくありません\n");
-    return 1;
-  }
-	user_input = argv[1];
-	token = tokenize(argv[1]);
-
-  printf(".global main\n");
-  printf("main:\n");
-  printf("  mov r0, #%d\n", expect_number());
-
-	while(!at_eof()){
-		if(consume('+')){
-			printf("  add r0, r0, #%ld\n", expect_number());
-			continue;
-		}
-
-		if(consume('-')){
-			printf("  sub r0, r0, #%ld\n", expect_number());
-			continue;
-		}
-	}
-  printf("  bx lr\n");
-  return 0;
-}
-
 typedef enum{
 	ND_ADD,
 	ND_SUB,
@@ -200,8 +173,10 @@ Node *primary(){
 
 void gen(Node *node){
 	if(node->kind == ND_NUM){
-		printf("mov32 r0, #%d\n", node->val);
-		printf("str r0, [sp, #-4]!");
+		char *tmp;
+
+		printf("ldr r0,=%d\n", node->val);
+		printf("str r0, [sp, #-4]!\n");
 		return;
 	}
 
@@ -231,4 +206,24 @@ void gen(Node *node){
 			break;
 	}
 	printf("str r0, [sp,#-4]!\n");
+}
+
+
+int main(int argc, char **argv) {
+  if (argc != 2) {
+    fprintf(stderr, "引数の個数が正しくありません\n");
+    return 1;
+  }
+	user_input = argv[1];
+	token = tokenize(argv[1]);
+	Node *node = expr();
+
+  printf(".global main\n");
+  printf("main:\n");
+
+	gen(node);
+
+  printf("ldr r0,[sp],#4\n");
+  printf("bx lr\n");
+  return 0;
 }
