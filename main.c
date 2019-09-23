@@ -7,6 +7,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "引数の個数が正しくありません\n");
     return 1;
   }
+
 	user_input = argv[1];
 	token = tokenize(argv[1]);
 	program();
