@@ -263,6 +263,30 @@ void gen(Node *node){
 
 			printf("pop {pc}\n");
 			break;
+		case ND_EQ:
+			printf("mov r2, #0\n");
+			printf("cmp r0, r1\n");
+			printf("moveq r2, #1\n");
+			printf("mov r0, r2\n");
+			break;
+		case ND_NEQ:
+			printf("mov r2, #0\n");
+			printf("cmp r0, r1\n");
+			printf("movne r2, #1\n");
+			printf("mov r0, r2\n");;
+			break;
+		case ND_LESS:
+			printf("mov r2, #0\n");
+			printf("cmp r0, r1\n");
+			printf("movlt r2, #1\n");
+			printf("mov r0, r2\n");
+			break;
+		case ND_LESSEQ:
+			printf("mov r2, #0\n");
+			printf("cmp r0, r1\n");
+			printf("movle r2, #1\n");
+			printf("mov r0, r2\n");
+			break;
 	}
 	printf("push {r0}\n");//str r0,[sp, #-4]! (pre index)
 }
