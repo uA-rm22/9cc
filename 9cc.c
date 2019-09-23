@@ -176,15 +176,15 @@ void gen(Node *node){
 		char *tmp;
 
 		printf("ldr r0,=%d\n", node->val);
-		printf("str r0, [sp, #-4]!\n");
+		printf("push {r0}\n");
 		return;
 	}
 
 	gen(node->lhs);
 	gen(node->rhs);
 
-	printf("ldr r1, [sp], #4\n");
-	printf("ldr r0, [sp], #4\n");
+	printf("pop {r1}\n");
+	printf("pop {r0}\n");
 
 	switch(node->kind){
 		case ND_ADD:
@@ -203,7 +203,7 @@ void gen(Node *node){
 			printf("pop {pc}\n");
 			break;
 	}
-	printf("str r0, [sp,#-4]!\n");
+	printf("push {r0}\n");
 }
 
 
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 
 	gen(node);
 
-  printf("ldr r0,[sp],#4\n");
+  printf("pop {r0}\n");
   printf("bx lr\n");
   return 0;
 }
