@@ -203,7 +203,7 @@ void gen(Node *node){
 			printf("pop {pc}\n");
 			break;
 	}
-	printf("push {r0}\n");
+	printf("push {r0}\n");//str r0,[sp, #-4] (pre index)
 }
 
 
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
 
 	gen(node);
 
-  printf("pop {r0}\n");
+  printf("pop {r0}\n");//ldr r0,[sp],#4 (post index)
   printf("bx lr\n");
   return 0;
 }
