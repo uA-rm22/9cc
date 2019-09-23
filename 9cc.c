@@ -115,6 +115,10 @@ typedef enum{
 	ND_MUL,
 	ND_DIV,
 	ND_NUM,
+	ND_EQ,
+	ND_NEQ,
+	ND_LESS,
+	ND_LESSEQ
 }NodeKind;
 
 typedef struct Node Node;
@@ -130,6 +134,10 @@ Node *mul();
 Node *primary();
 Node *expr();
 Node *unary();
+Node *equality();
+Node *relational();
+Node *add();
+Node *mul();
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs){
 	Node *node = calloc(1, sizeof(Node));
@@ -146,6 +154,53 @@ Node *new_node_num(int val){
 	return node;
 }
 
+Node *expr(){
+	return equality();
+}
+
+Node *equality(){
+	Node *node = relational();
+	for(;;){
+		if(consume("==")){
+			node = new_node(ND_EQ, node, relational());
+		}else if(consume("!=")){
+			node = new_node(ND_NEQ, node, relational());
+		}else{
+			return node;
+		}
+	}
+}
+
+Node *relational(){
+	Node *node = add();
+	for(;;){
+		if(consume("<")){
+			node = new_node(ND_LESS, node, add());
+		}else if(consume("<=")){
+			node = new_node(ND_LESSEQ, node, add());
+		}else if(consume(">")){
+			node = new_node(ND_LESS, add(), node);
+		}else if(consume(">=")){
+			node = new_node(ND_LESSEQ, add(), node);
+		}else{
+			return node;
+		}
+	}
+}
+
+Node *add(){
+	Node *node = mul();
+	for(;;){
+		if(consume("+")){
+			node = new_node(ND_ADD, node, mul());
+		}else if(consume("-")){
+			node = new_node(ND_SUB, node, mul());
+		}else{
+			return node;
+		}
+	}
+}
+
 Node *mul(){
 	Node *node = unary();
 	for(;;){
@@ -159,29 +214,6 @@ Node *mul(){
 	}
 }
 
-Node *expr(){
-	Node *node = mul();
-	for(;;){
-		if(consume("+")){
-			node = new_node(ND_ADD, node, mul());
-		}else if(consume("-")){
-			node = new_node(ND_SUB, node, mul());
-		}else{
-			return node;
-		}
-	}
-}
-
-Node *primary(){
-	if(consume("(")){
-		Node *node = expr();
-		expect(")");
-		return node;
-	}
-
-	return new_node_num(expect_number());
-}
-
 Node *unary(){
 	if(consume("+")){
 		return primary();
@@ -190,6 +222,15 @@ Node *unary(){
 		return new_node(ND_SUB, new_node_num(0), primary());
 	}
 	return primary();
+}
+
+Node *primary(){
+	if(consume("(")){
+		Node *node = expr();
+		expect(")");
+		return node;
+	}
+	return new_node_num(expect_number());
 }
 
 void gen(Node *node){
