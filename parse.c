@@ -53,6 +53,10 @@ Token *tokenize(char *p){
 	return head.next;
 }
 
+void error(char *s){
+	fprintf(stderr, "%s", s);
+}
+
 void error_at(char *loc ,char *fmt,...){
 	va_list ap;
 	va_start(ap, fmt);
