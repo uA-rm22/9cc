@@ -82,7 +82,7 @@ Token *tokenize(char *p){
 			continue;
 		}
 
-		if(*p == '+' || *p == '-'){
+		if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')'){
 			cur = new_token(TK_RESERVED, cur, p++);
 			continue;
 		}
@@ -197,12 +197,10 @@ void gen(Node *node){
 			printf("mul r0, r0, r1\n");
 			break;
 		case ND_DIV:
-			printf("eor r4, r0, r1\n");
-			printf("ratio DivMod R2, R0, R1, R3\n");//R2<= ans R0/R1 R3<=temp R0<=res
+			printf("push {lr}\n");
+			printf("bl __aeabi_idiv\n");//call subroutine
 
-			printf("cmp r4, #0\n");
-			printf("rsblt r2, #0\n");
-			printf("mov r0, r2\n");
+			printf("pop {pc}\n");
 			break;
 	}
 	printf("str r0, [sp,#-4]!\n");
