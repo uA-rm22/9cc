@@ -10,6 +10,15 @@ void gen_lval(Node *node){
 }
 
 void gen(Node *node){
+	if(node->kind == ND_RETURN){
+		gen(node->lhs);
+		printf("pop {r0}\n");
+		printf("mov sp, fp\n");
+		printf("pop {fp}\n");
+		printf("bx lr\n");
+		return;
+	}
+
 	switch(node->kind){
 	case ND_NUM:
 		printf("ldr r0,=%d\n", node->val);

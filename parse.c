@@ -45,6 +45,12 @@ Token *tokenize(char *p){
 			}
 		}
 
+		if(strncmp(p, "return", 6) == 0 && !is_alnum(p[6])){
+			cur = new_token(TK_RETURN, cur ,p, 6);
+			p += 6;
+			continue;
+		}
+
 		if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')'|| *p == '>' || *p == '<' || *p == ';'|| *p == '='){
 			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
@@ -97,8 +103,8 @@ bool consume(char *op){
 	return true;
 }
 
-Token *consume_ident(){
-	if(token->kind != TK_IDENT ){
+Token *consume_kind( TokenKind kind){
+	if(token->kind != kind ){
 		return NULL;
 	}
 	Token *ident_token = token;
@@ -150,7 +156,14 @@ void program(){
 }
 
 Node *stmt(){
-	Node *node = expr();
+	Node *node;
+	if(consume_kind(TK_RETURN)){
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_RETURN;
+		node->lhs = expr();
+	}else{
+		node = expr();
+	}
 	expect(";");
 	return node;
 }
@@ -239,7 +252,7 @@ Node *primary(){
 		expect(")");
 		return node;
 	}
-	Token *tok = consume_ident();
+	Token *tok = consume_kind(TK_IDENT);
 	if(tok){
 		Node *node = new_node(ND_LVAR, NULL, NULL);
 		LVar *lvar = find_lvar(tok);
