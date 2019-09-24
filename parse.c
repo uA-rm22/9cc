@@ -127,7 +127,7 @@ bool consume(char *op){
 	return true;
 }
 
-Token *consume_kind( TokenKind kind){
+Token *consume_kind(TokenKind kind){
 	if(token->kind != kind ){
 		return NULL;
 	}
@@ -332,6 +332,27 @@ Node *primary(){
 	}
 	Token *tok = consume_kind(TK_IDENT);
 	if(tok){
+		if(consume("(")){
+			int i=0;
+			Node *node = new_node(ND_FUNCCALL, NULL, NULL);
+			if(!consume(")")){
+				node->statements_pointer[0] = expr();
+				node->name = tok->str;
+				node->len = tok->len;
+				while(consume(",")){
+					i += 1;
+					node->statements_pointer[i] = expr();
+				}
+				node->val = i+1;
+				expect(")");
+				return node;
+			}else{
+				node->name = tok->str;
+				node->len = tok->len;
+				node->val = 0;
+				return node;
+			}	
+		}
 		Node *node = new_node(ND_LVAR, NULL, NULL);
 		LVar *lvar = find_lvar(tok);
 		if(lvar){

@@ -2,8 +2,8 @@ SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 ARG="0;"
 
-9cc: $(SRCS)
-		gcc -g -O0 -o 9cc $(SRCS)
+9cc: $(OBJS)
+		$(CC) -o 9cc $(OBJS)
 
 $(OBJS): 9cc.h
 
