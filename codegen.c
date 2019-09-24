@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+int label_number = 0;
+
 void gen_lval(Node *node){
 	if(node->kind != ND_LVAR){
 		error("代入の左辺値が変数ではありません");
@@ -10,12 +12,34 @@ void gen_lval(Node *node){
 }
 
 void gen(Node *node){
-	if(node->kind == ND_RETURN){
+	switch(node->kind){
+	case ND_RETURN:
 		gen(node->lhs);
 		printf("pop {r0}\n");
 		printf("mov sp, fp\n");
 		printf("pop {fp}\n");
 		printf("bx lr\n");
+		return;
+	case ND_IF:
+		gen(node->lhs); //条件式
+		printf("pop {r0}\n");
+		printf("cmp r0,#0\n");
+		printf("beq .Lend%d\n",label_number);
+		gen(node->rhs->lhs);//条件がtrueの時に実行される式
+		printf(".Lend%d:\n",label_number);
+		label_number += 1;
+		return;
+	case ND_IF_ELSE:
+		gen(node->lhs); //条件式
+		printf("pop {r0}\n");
+		printf("cmp r0,#0\n");
+		printf("beq .Lelse%d\n",label_number);
+		gen(node->rhs->lhs);//条件がtrueの時に実行される式
+		printf("b .Lend%d\n",label_number);
+		printf(".Lelse%d:\n",label_number);
+		gen(node->rhs->rhs);//条件がfalseの時に実行される式
+		printf(".Lend%d:\n",label_number);
+		label_number += 1;
 		return;
 	}
 

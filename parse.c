@@ -51,6 +51,30 @@ Token *tokenize(char *p){
 			continue;
 		}
 
+		if(strncmp(p, "if", 2) == 0 && !is_alnum(p[2])){
+			cur = new_token(TK_IF, cur ,p, 2);
+			p += 2;
+			continue;
+		}
+
+		if(strncmp(p, "else", 4) == 0 && !is_alnum(p[4])){
+			cur = new_token(TK_ELSE, cur ,p, 4);
+			p += 4;
+			continue;
+		}
+
+		if(strncmp(p, "while", 5) == 0 && !is_alnum(p[5])){
+			cur = new_token(TK_WHILE, cur ,p, 5);
+			p += 5;
+			continue;
+		}
+
+		if(strncmp(p, "for", 3) == 0 && !is_alnum(p[3])){
+			cur = new_token(TK_FOR, cur ,p, 3);
+			p += 3;
+			continue;
+		}
+
 		if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')'|| *p == '>' || *p == '<' || *p == ';'|| *p == '='){
 			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
@@ -161,6 +185,50 @@ Node *stmt(){
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_RETURN;
 		node->lhs = expr();
+	}else if(consume_kind(TK_IF)){
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_IF;
+		node->rhs = calloc(1, sizeof(Node));//if文のブロック内のステートメントを指すためのnode
+	
+		expect("(");
+		node->lhs = expr();//条件文
+		expect(")");
+		node->rhs->lhs = stmt();//turuの時に実行されるステートメント
+		if(consume_kind(TK_ELSE)){
+			node->rhs->rhs = stmt();//falseの時に実行されるステートメント
+			node->kind = ND_IF_ELSE;
+		}
+		return node;
+	}else if(consume_kind(TK_WHILE)){
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_WHILE;
+		expect("(");
+		node->lhs = expr();//条件式
+		expect(")");
+		node->rhs = stmt();//whileのブロック内の式
+		return node;
+	}else if(consume_kind(TK_FOR)){
+		node = calloc(1, sizeof(Node));
+		node->kind = ND_FOR;
+		node->lhs = calloc(1, sizeof(Node));
+		node->lhs->kind = ND_INFIN;
+		node->rhs = calloc(1, sizeof(Node));
+		node->rhs->kind = ND_COND;//for文のブロック内のステートメントとループ条件式の2つの式を指す。
+		expect("(");
+		if(!consume(";")){
+			node->lhs->lhs = expr();//初期化の式
+		}
+		expect(";");
+		if(!consume(";")){
+			node->rhs->lhs = expr();//ループを継続するかの判定式
+		}
+		expect(";");
+		if(!consume(")")){
+			node->lhs->rhs = expr();//ループ終了時に実行される式
+		}
+		expect(")");
+		node->rhs->rhs = stmt();
+		return node;
 	}else{
 		node = expr();
 	}

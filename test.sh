@@ -43,4 +43,7 @@ try 1  "a=9;b=9;a==b;"
 
 try 5 "return 5;"
 try 7 "returnx = 7; return returnx;"
+
+try 9 "if(5>1) 9;"
+try 7 "if(-7>1) 9;else 7;"
 echo OK

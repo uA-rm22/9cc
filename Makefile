@@ -1,8 +1,9 @@
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
+ARG="0;"
 
 9cc: $(SRCS)
-	gcc -o 9cc $(SRCS)
+		gcc -g -O0 -o 9cc $(SRCS)
 
 $(OBJS): 9cc.h
 
@@ -17,3 +18,7 @@ gitPush: $(SRCS) Makefile test.sh
 
 clean:
 	rm -f 9cc *.o *~ tmp*
+
+debug:
+	gcc -g -O0 -o 9cc $(SRCS)
+	gdb --args 9cc "$(ARG)"
