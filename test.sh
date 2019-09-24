@@ -46,4 +46,9 @@ try 7 "returnx = 7; return returnx;"
 
 try 9 "if(5>1) 9;"
 try 7 "if(-7>1) 9;else 7;"
+
+try 9 "a=9;if(a>7){return a;} 8;"
+try 30 "a=0;while(a<30){a=a+1;} return a;"
+try 16 "boo=0;for(i=0; i<8; i=i+1){boo = boo+1; boo = boo + 1; } boo;"
+
 echo OK

@@ -75,7 +75,7 @@ Token *tokenize(char *p){
 			continue;
 		}
 
-		if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')'|| *p == '>' || *p == '<' || *p == ';'|| *p == '='){
+		if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')'|| *p == '>' || *p == '<' || *p == ';'|| *p == '=' ||*p == '{'|| *p == '}' ){
 			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
 		}
@@ -210,10 +210,9 @@ Node *stmt(){
 	}else if(consume_kind(TK_FOR)){
 		node = calloc(1, sizeof(Node));
 		node->kind = ND_FOR;
-		node->lhs = calloc(1, sizeof(Node));
-		node->lhs->kind = ND_INFIN;
-		node->rhs = calloc(1, sizeof(Node));
-		node->rhs->kind = ND_COND;//for文のブロック内のステートメントとループ条件式の2つの式を指す。
+		node->lhs = calloc(1, sizeof(Node));//for文の初期化式とループごとに実行される式を指す。
+		node->rhs = calloc(1, sizeof(Node));//for文のブロック内のステートメントとループ条件式の2つの式を指す。
+
 		expect("(");
 		if(!consume(";")){
 			node->lhs->lhs = expr();//初期化の式
@@ -227,7 +226,18 @@ Node *stmt(){
 			node->lhs->rhs = expr();//ループ終了時に実行される式
 		}
 		expect(")");
-		node->rhs->rhs = stmt();
+		node->rhs->rhs = stmt();//ループ内のステートメント
+		return node;
+	}else if(consume("{")){
+		int element_num = 0;
+		Node *node = calloc(1, sizeof(Node));
+		node->kind = ND_BLOCK;
+		node->statements_pointer[0] = stmt();
+		while(!consume("}")){
+			element_num += 1;
+			node->statements_pointer[element_num] = stmt();
+		}
+		node->statements_pointer[element_num+1] = NULL;
 		return node;
 	}else{
 		node = expr();

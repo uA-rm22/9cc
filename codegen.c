@@ -12,6 +12,7 @@ void gen_lval(Node *node){
 }
 
 void gen(Node *node){
+	int ele_num = 0;
 	switch(node->kind){
 	case ND_RETURN:
 		gen(node->lhs);
@@ -40,6 +41,37 @@ void gen(Node *node){
 		gen(node->rhs->rhs);//条件がfalseの時に実行される式
 		printf(".Lend%d:\n",label_number);
 		label_number += 1;
+		return;
+	case ND_WHILE:
+		printf(".Lbegin%d:\n",label_number);
+		gen(node->lhs); //条件式
+		printf("pop {r0}\n");
+		printf("cmp r0,#0\n");
+		printf("beq .Lend%d\n",label_number);
+		gen(node->rhs);//条件がtrueの時に実行される式
+		printf("b .Lbegin%d\n",label_number);
+		printf(".Lend%d:\n",label_number);
+		label_number += 1;
+		return;
+	case ND_FOR:
+		gen(node->lhs->lhs);//初期化式
+		printf(".Lbegin%d:\n",label_number);
+		gen(node->rhs->lhs); //条件式
+		printf("pop {r0}\n");
+		printf("cmp r0,#0\n");
+		printf("beq .Lend%d\n",label_number);
+		gen(node->rhs->rhs);//条件がtrueの時に実行される式
+		gen(node->lhs->rhs);//ループ終了時に実行される式		
+		printf("b .Lbegin%d\n",label_number);
+		printf(".Lend%d:\n",label_number);
+		label_number += 1;
+		return;
+	case ND_BLOCK:
+		while(node->statements_pointer[ele_num] != NULL){
+			gen(node->statements_pointer[ele_num]);
+			printf("pop {r0}\n");
+			ele_num += 1;
+		}
 		return;
 	}
 
