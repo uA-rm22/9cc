@@ -78,28 +78,18 @@ void gen(Node *node){
 	switch(node->kind){
 	case ND_FUNCCALL:
 		printf("push {lr}\n");
-//		printf("push {fp}\n");
-/*		for(ele_num = 0; ele_num < node->val; ele_num++){
+		for(ele_num = 0; ele_num < node->val; ele_num++){
 			gen(node->statements_pointer[ele_num]);
 		}
-		for(;0 <= ele_num ; ele_num--){
-			printf("pop {r%d}\n", ele_num);
-		}*/
+		for(ele_num = node->val;0 < ele_num  ; ele_num--){
+			printf("pop {r%d}\n", ele_num-1);
+		}
 		printf("bl ");
 		for(ele_num = 0; ele_num < node->len; ele_num++){
 			printf("%c",*(node->name));
 			node->name++;
 		}
 		printf("\n");
-/*		printf("(");
-		for(ele_num = 0; ele_num < node->val -1 ; ele_num++){
-			printf("int, ");
-		}
-		if(node->val != 0){
-			printf("int)\n");
-		}else{
-			printf(")\n");
-		}*/
 		printf("pop {lr}\n");
 		printf("push {r0}\n");
 		return;

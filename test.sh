@@ -20,6 +20,10 @@ try() {
 gcc -o tmp tmp.s foo.o
 ./tmp
 
+./9cc "a=6; b = 8; boo(2, 4, a, b);" > tmp.s
+gcc -o tmp tmp.s foo.o
+./tmp
+
 try 42 "42;"
 try 21 "5+20-4;"
 try 41 "12 + 34 -5; "
