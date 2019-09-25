@@ -4,7 +4,6 @@ int is_alnum(char c){
 	return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || (c == '_');
 }
 
-Token *token;
 Token *new_token(TokenKind kind, Token *cur, char *str, int len){
 	Token *tok = calloc(1, sizeof(Token));
 	tok->kind = kind;

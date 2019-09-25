@@ -1,6 +1,7 @@
 #include "9cc.h"
 Node *code[100];
-LVar *locals = NULL;
+LVar *locals;
+int lvar_max = 0;
 
 LVar *find_lvar(Token *tok){
 	for(LVar *var = locals; var; var = var->next){
@@ -80,10 +81,58 @@ Node *new_node_num(int val){
 	return node;
 }
 
+Node *new_node_LVar(Token *tok){
+	Node *node = new_node(ND_LVAR, NULL, NULL);
+	LVar *lvar = find_lvar(tok);
+	if(lvar){
+		node->offset = lvar->offset;
+	}else{	
+		lvar = calloc(1, sizeof(LVar));
+		lvar->next = locals;
+		lvar->name = tok->str;
+		lvar->len = tok->len;
+		if(locals == NULL){
+			lvar->offset = 0;
+			lvar_max = 1;
+		}else{
+			lvar->offset = locals->offset + 1;
+			lvar_max += 1;
+		}
+		node->offset = lvar->offset;
+		locals = lvar;
+	}
+	return node;
+}
+
 void program(){
 	int i=0;
+	int arg_num;
+	Token *tk;
 	while(!at_eof()){
-		code[i++] = stmt();
+		locals = NULL;
+		arg_num = 0;
+		Token *function_name = consume_kind(TK_IDENT);
+		Node *node = new_node(ND_FUNCDEF, NULL, NULL);
+		node->name = function_name->str;
+		node->len = function_name->len;
+
+		expect("(");
+		if( !consume(")") ){
+			tk = consume_kind( TK_IDENT );
+			node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
+			while( consume(",") ){
+				node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
+			}
+			consume(")");
+		}
+		node->val = arg_num;
+		code[i++] = node;
+
+		expect("{");
+		while( !consume("}") ){
+			code[i++] = stmt();
+		}
+		code[i++] = new_node(ND_FUNCEND, NULL, NULL);
 	}
 	code[i++] = NULL;
 }
@@ -262,23 +311,7 @@ Node *primary(){
 				return node;
 			}	
 		}
-		Node *node = new_node(ND_LVAR, NULL, NULL);
-		LVar *lvar = find_lvar(tok);
-		if(lvar){
-			node->offset = lvar->offset;
-		}else{	
-			lvar = calloc(1, sizeof(LVar));
-			lvar->next = locals;
-			lvar->name = tok->str;
-			lvar->len = tok->len;
-			if(locals == NULL){
-				lvar->offset = 4;
-			}else{
-				lvar->offset = locals->offset + 4;
-			}
-			node->offset = lvar->offset;
-			locals = lvar;
-		}
+		Node *node = new_node_LVar(tok);
 		return node;
 	}
 

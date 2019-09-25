@@ -7,7 +7,7 @@ void gen_lval(Node *node){
 		error("代入の左辺値が変数ではありません");
 	}
 	printf("mov r0, fp\n");
-	printf("sub r0, r0, #%d\n", node->offset);
+	printf("sub r0, r0, #%d\n", (lvar_max/2+lvar_max%2)*8 + 4 - node->offset*4);
 	printf("push {r0}\n");
 }
 
@@ -72,6 +72,25 @@ void gen(Node *node){
 			printf("pop {r0}\n");
 			ele_num += 1;
 		}
+		return;
+	case ND_FUNCDEF:
+		for(ele_num = 0; ele_num < node->len; ele_num++){
+			printf("%c",*(node->name));
+			node->name++;
+		}
+		printf(":\n");
+		printf("str fp,[sp, #-4]!\n");//push fp
+		printf("add fp, sp, #0\n");
+		printf("sub sp, sp, #%d\n", (lvar_max/2+lvar_max%2)*8 + 4);
+ 		for( ele_num = 0; ele_num < node->val; ele_num++ ){
+			printf("str r%d, [fp, #%d]\n", ele_num, -((lvar_max/2+lvar_max%2)*8 + 4 - ele_num*4) );
+		}
+		return;
+	case ND_FUNCEND:
+		printf("pop {r0}\n");//pop r0
+		printf("add sp, fp, #0\n");
+		printf("ldr fp, [sp], #4\n");
+		printf("bx lr\n");
 		return;
 	}
 
