@@ -41,4 +41,5 @@ try 21 "fib(num){
         main(){
           return fib(7);
         }"
+try 4 "main(){x=4;y=9;z=&y-4;return *z;}"
 echo OK

@@ -132,6 +132,15 @@ void gen(Node *node){
 		printf("str r1 ,[r0]\n");
 		printf("push {r1}\n");
 		return;
+	case ND_ADDR:
+		gen_lval(node->lhs);
+		return;
+	case ND_DEREF:
+		gen(node->lhs);
+		printf("pop {r0}\n");
+		printf("ldr r0, [r0]\n");
+		printf("push {r0}\n");
+		return;
 	}
 	gen(node->lhs);
 	gen(node->rhs);
