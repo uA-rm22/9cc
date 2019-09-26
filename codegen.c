@@ -92,9 +92,6 @@ void gen(Node *node){
 		printf("ldr fp, [sp], #4\n");
 		printf("bx lr\n");
 		return;
-	}
-
-	switch(node->kind){
 	case ND_FUNCCALL:
 		printf("push {lr}\n");
 		for(ele_num = 0; ele_num < node->val; ele_num++){

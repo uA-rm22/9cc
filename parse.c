@@ -47,7 +47,7 @@ Token *consume_kind(TokenKind kind){
 }	
 
 void expect(char *op){
-	if(token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len) ){
+	if( strlen(op) != token->len || memcmp(token->str, op, token->len) ){
 		error_at(token->str, "'%s'ではありません",op);
 	}
 	token = token->next;
@@ -111,6 +111,7 @@ void program(){
 	while(!at_eof()){
 		locals = NULL;
 		arg_num = 0;
+		expect("int");
 		Token *function_name = consume_kind(TK_IDENT);
 		Node *node = new_node(ND_FUNCDEF, NULL, NULL);
 		node->name = function_name->str;
@@ -118,9 +119,12 @@ void program(){
 
 		expect("(");
 		if( !consume(")") ){
+			expect("int");
 			tk = consume_kind( TK_IDENT );
 			node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
 			while( consume(",") ){
+				expect("int");
+				tk = consume_kind( TK_IDENT );
 				node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
 			}
 			consume(")");
@@ -197,6 +201,9 @@ Node *stmt(){
 		}
 		node->statements_pointer[element_num+1] = NULL;
 		return node;
+	}else if(consume_kind(TK_INT)){
+		Token *tk = consume_kind(TK_IDENT);
+		node = new_node_LVar(tk);
 	}else{
 		node = expr();
 	}
@@ -316,6 +323,9 @@ Node *primary(){
 				node->val = 0;
 				return node;
 			}	
+		}
+		if(!find_lvar(tok)){
+			error_at( tok->str, "定義されていない変数です\n" );
 		}
 		Node *node = new_node_LVar(tok);
 		return node;
