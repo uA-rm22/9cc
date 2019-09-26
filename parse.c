@@ -66,6 +66,13 @@ bool at_eof(){
 	return token->kind==TK_EOF;
 }
 
+Type *new_type(Type_enum ty, Type *ptr_to){
+	Type *type = calloc(1, sizeof(Type));
+	type->ty = ty;
+	type->ptr_to = ptr_to;
+	return type;
+}
+
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs){
 	Node *node = calloc(1, sizeof(Node));
 	node->kind = kind;
@@ -202,8 +209,13 @@ Node *stmt(){
 		node->statements_pointer[element_num+1] = NULL;
 		return node;
 	}else if(consume_kind(TK_INT)){
+		Type *type = new_type( INT, NULL );
+		while( consume("*") ){
+			type = new_type( PTR, type);
+		}
 		Token *tk = consume_kind(TK_IDENT);
 		node = new_node_LVar(tk);
+		node->type = type;
 	}else{
 		node = expr();
 	}

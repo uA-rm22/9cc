@@ -42,5 +42,15 @@ try 21 "int fib(int num){
           return fib(7);
         }"
 try 4 "int main(){int x; int y; int z;x=4;y=9;z=&y-4;return *z;}"
+try 84 "int a(int x){
+						return b(x);
+					}
+					int b(int y){
+						return y+5;
+					}
+					int main(){
+						a(79);
+					}"
+try 3 "int main(){int x; int *y; y = &x; *y = 3; return x;}"
 
 echo OK

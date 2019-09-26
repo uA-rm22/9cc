@@ -3,11 +3,15 @@
 int label_number = 0;
 
 void gen_lval(Node *node){
-	if(node->kind != ND_LVAR){
-		error("代入の左辺値が変数ではありません");
+	if(node->kind == ND_DEREF){
+		gen(node->lhs);
+	}else{
+		if(node->kind != ND_LVAR){
+			error("代入の左辺値が変数ではありません");
+		}
+		printf("mov r0, fp\n");
+		printf("sub r0, r0, #%d\n", (lvar_max/2+lvar_max%2)*8 + 4 - node->offset*4);
 	}
-	printf("mov r0, fp\n");
-	printf("sub r0, r0, #%d\n", (lvar_max/2+lvar_max%2)*8 + 4 - node->offset*4);
 	printf("push {r0}\n");
 }
 
