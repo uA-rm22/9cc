@@ -78,6 +78,9 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs){
 	node->kind = kind;
 	node->lhs = lhs;
 	node->rhs = rhs;
+	if(lhs){
+		node->type = lhs->type;
+	}
 	return node;
 }
 
@@ -85,6 +88,7 @@ Node *new_node_num(int val){
 	Node *node = calloc(1, sizeof(Node));
 	node->kind = ND_NUM;
 	node->val = val;
+	node->type = new_type(INT, NULL);
 	return node;
 }
 
@@ -126,7 +130,7 @@ void program(){
 		Node *node = new_node(ND_FUNCDEF, NULL, NULL);
 		node->name = function_name->str;
 		node->len = function_name->len;
-
+		node->type = new_type(INT, NULL);
 		expect("(");
 		if( !consume(")") ){
 			expect("int");
@@ -276,18 +280,20 @@ Node *add(){
 	for(;;){
 		if(consume("+")){
 			right_value = mul();
-			if( node->kind == ND_LVAR && right_value->kind == ND_NUM){
-				if(node->type->ty == PTR){
-					right_value->val = right_value->val*4;
-				}
+			if( node->type->ty == PTR && right_value->type->ty == INT){
+				right_value->val = right_value->val*4;
+			}
+			if( node->type->ty == INT && right_value->type->ty == PTR){
+				node->val = node->val*4;
 			}
 			node = new_node(ND_ADD, node, right_value);
 		}else if(consume("-")){
 			right_value = mul();
-			if( node->kind == ND_LVAR && right_value->kind == ND_NUM){
-				if(node->type->ty == PTR){
-					right_value->val = right_value->val*4;
-				}
+			if( node->type->ty == PTR && right_value->type->ty == INT){
+				right_value->val = right_value->val*4;
+			}
+			if( node->type->ty == INT && right_value->type->ty == PTR){
+				node->val = node->val*4;
 			}
 			node = new_node(ND_SUB, node, right_value);
 		}else{
@@ -322,6 +328,13 @@ Node *unary(){
 	if(consume("&")){
 		return new_node(ND_ADDR, unary(), NULL);
 	}
+	if(consume_kind( TK_SIZEOF )){
+		Node *node = unary();
+		switch(node->type->ty){
+			case INT: return new_node_num(4);
+			case PTR: return new_node_num(4);
+		}
+	}
 	return primary();
 }
 
@@ -336,10 +349,11 @@ Node *primary(){
 		if(consume("(")){
 			int i=0;
 			Node *node = new_node(ND_FUNCCALL, NULL, NULL);
+			node->name = tok->str;
+			node->len = tok->len;
+			node->type = new_type(INT, NULL);
 			if(!consume(")")){
 				node->statements_pointer[0] = expr();
-				node->name = tok->str;
-				node->len = tok->len;
 				while(consume(",")){
 					i += 1;
 					node->statements_pointer[i] = expr();
@@ -348,8 +362,6 @@ Node *primary(){
 				expect(")");
 				return node;
 			}else{
-				node->name = tok->str;
-				node->len = tok->len;
 				node->val = 0;
 				return node;
 			}	
