@@ -66,7 +66,7 @@ bool at_eof(){
 	return token->kind==TK_EOF;
 }
 
-Type *new_type(Type_enum ty, Type *ptr_to){
+Type *new_type(int ty, Type *ptr_to){
 	Type *type = calloc(1, sizeof(Type));
 	type->ty = ty;
 	type->ptr_to = ptr_to;
@@ -93,11 +93,13 @@ Node *new_node_LVar(Token *tok){
 	LVar *lvar = find_lvar(tok);
 	if(lvar){
 		node->offset = lvar->offset;
+		node->type = lvar->type;
 	}else{	
 		lvar = calloc(1, sizeof(LVar));
 		lvar->next = locals;
 		lvar->name = tok->str;
 		lvar->len = tok->len;
+		lvar->type = tok->type;
 		if(locals == NULL){
 			lvar->offset = 0;
 			lvar_max = 1;
@@ -106,6 +108,7 @@ Node *new_node_LVar(Token *tok){
 			lvar_max += 1;
 		}
 		node->offset = lvar->offset;
+		node->type = lvar->type;
 		locals = lvar;
 	}
 	return node;
@@ -128,10 +131,12 @@ void program(){
 		if( !consume(")") ){
 			expect("int");
 			tk = consume_kind( TK_IDENT );
+			tk->type = new_type(INT, NULL);
 			node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
 			while( consume(",") ){
 				expect("int");
 				tk = consume_kind( TK_IDENT );
+				tk->type = new_type(INT, NULL);
 				node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
 			}
 			consume(")");
@@ -214,8 +219,8 @@ Node *stmt(){
 			type = new_type( PTR, type);
 		}
 		Token *tk = consume_kind(TK_IDENT);
+		tk->type = type;
 		node = new_node_LVar(tk);
-		node->type = type;
 	}else{
 		node = expr();
 	}
@@ -267,11 +272,24 @@ Node *relational(){
 
 Node *add(){
 	Node *node = mul();
+	Node *right_value;
 	for(;;){
 		if(consume("+")){
-			node = new_node(ND_ADD, node, mul());
+			right_value = mul();
+			if( node->kind == ND_LVAR && right_value->kind == ND_NUM){
+				if(node->type->ty == PTR){
+					right_value->val = right_value->val*4;
+				}
+			}
+			node = new_node(ND_ADD, node, right_value);
 		}else if(consume("-")){
-			node = new_node(ND_SUB, node, mul());
+			right_value = mul();
+			if( node->kind == ND_LVAR && right_value->kind == ND_NUM){
+				if(node->type->ty == PTR){
+					right_value->val = right_value->val*4;
+				}
+			}
+			node = new_node(ND_SUB, node, right_value);
 		}else{
 			return node;
 		}
@@ -345,3 +363,4 @@ Node *primary(){
 
 	return new_node_num(expect_number());
 }
+//

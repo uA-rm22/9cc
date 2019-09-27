@@ -4,7 +4,7 @@ try() {
   input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -o tmp tmp.s
+  gcc -o tmp tmp.s foo.o
   ./tmp
   actual="$?"
 
@@ -20,9 +20,7 @@ try() {
 #gcc -o tmp tmp.s foo.o
 #./tmp
 
-#./9cc "a=6; b = 8; boo(2, 4, a, b);" > tmp.s
-#gcc -o tmp tmp.s foo.o
-#./tmp
+try 4 "int main(){int *p; p=alloc4(1,2,4,8); int *q; q = p+ 2; return *q;}"
 
 try 42 "int main(){return 42;}"
 try 49 "int main(){int a; a=9; if(a>4){return 49;}else{return 5;}}"
