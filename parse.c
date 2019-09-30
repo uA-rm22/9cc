@@ -106,10 +106,10 @@ Node *new_node_LVar(Token *tok, Type *type){
 		lvar->len = tok->len;
 		lvar->type = type;
 		if(locals == NULL){
-			lvar->offset = 0;
 			lvar_max = type->size;
+			lvar->offset = lvar_max;
 		}else{
-			lvar->offset = locals->offset + locals->type->size;
+			lvar->offset = locals->offset + lvar->type->size;
 			lvar_max += type->size;
 		}
 		node->offset = lvar->offset;

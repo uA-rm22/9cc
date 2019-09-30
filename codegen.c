@@ -10,7 +10,7 @@ void gen_lval(Node *node){
 			error("代入の左辺値が変数ではありません");
 		}
 		printf("mov r0, fp\n");
-		printf("sub r0, r0, #%d\n",  node->offset + 8);
+		printf("sub r0, r0, #%d\n",  node->offset + 4);
 		printf("push {r0}\n");
 	}
 }
