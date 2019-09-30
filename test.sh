@@ -53,4 +53,21 @@ try 9 "int main(){int x;return 5+sizeof(x);}"
 try 4 "int main(){int *p; p=alloc4(1,2,4,8); int *q; q = p+ 2; return *q;}"
 try 1 "int main(){int a[5];*a=1; return *a;}"
 try 3 "int main(){int a[5];*a=1;*(a+1)=2; int *p; p=a; return *p+*(p+1);}"
+try 9 "int main(){int a[5]; a[0]=9; return a[0];}"
+try 14 "int main(){
+        int a[15];
+        int i;
+        for(i=0; i<15; i=i+1){
+          a[i]=i;
+        }
+        return a[14];
+        }"
+try 14 "int main(){
+        int a[15];
+        int i;
+        for(i=0; i<15; i=i+1){
+          i[a]=i;
+        }
+        return a[14];
+        }"
 echo OK

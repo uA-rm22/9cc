@@ -369,13 +369,23 @@ Node *primary(){
 		if(!find_lvar(tok)){
 			error_at( tok->str, "定義されていない変数です\n" );
 		}
-		Node *node = new_node_LVar(tok, NULL);
-		if(node->type->ty == ARRAY){
-			//node->type->ty = PTR;
+		if(consume("[")){
+			Node *left_value = new_node_LVar(tok, NULL);
+			Node *right_value = add();
+			expect("]");
+			return new_node( ND_DEREF, new_node( ND_ADD, left_value, right_value ), NULL );
 		}
+		Node *node = new_node_LVar(tok, NULL);
 		return node;
 	}
 
-	return new_node_num(expect_number());
+	int number = expect_number();
+	if(consume("[")){
+		Node *left_value = new_node_num(number);
+		Node *right_value = add();
+		expect("]");
+		return new_node( ND_DEREF, new_node( ND_ADD, left_value, right_value ), NULL );
+	}
+	return new_node_num(number);
 }
 //
