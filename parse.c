@@ -66,10 +66,11 @@ bool at_eof(){
 	return token->kind==TK_EOF;
 }
 
-Type *new_type(int ty, Type *ptr_to){
+Type *new_type(int ty, Type *ptr_to, size_t size){
 	Type *type = calloc(1, sizeof(Type));
 	type->ty = ty;
 	type->ptr_to = ptr_to;
+	type->size = size;
 	return type;
 }
 
@@ -88,11 +89,11 @@ Node *new_node_num(int val){
 	Node *node = calloc(1, sizeof(Node));
 	node->kind = ND_NUM;
 	node->val = val;
-	node->type = new_type(INT, NULL);
+	node->type = new_type(INT, NULL, 4);
 	return node;
 }
 
-Node *new_node_LVar(Token *tok){
+Node *new_node_LVar(Token *tok, Type *type){
 	Node *node = new_node(ND_LVAR, NULL, NULL);
 	LVar *lvar = find_lvar(tok);
 	if(lvar){
@@ -103,13 +104,13 @@ Node *new_node_LVar(Token *tok){
 		lvar->next = locals;
 		lvar->name = tok->str;
 		lvar->len = tok->len;
-		lvar->type = tok->type;
+		lvar->type = type;
 		if(locals == NULL){
 			lvar->offset = 0;
-			lvar_max = 1;
+			lvar_max = type->size;
 		}else{
-			lvar->offset = locals->offset + 1;
-			lvar_max += 1;
+			lvar->offset = locals->offset + locals->type->size;
+			lvar_max += type->size;
 		}
 		node->offset = lvar->offset;
 		node->type = lvar->type;
@@ -123,6 +124,7 @@ void program(){
 	int arg_num;
 	Token *tk;
 	while(!at_eof()){
+		lvar_max = 0;
 		locals = NULL;
 		arg_num = 0;
 		expect("int");
@@ -130,20 +132,18 @@ void program(){
 		Node *node = new_node(ND_FUNCDEF, NULL, NULL);
 		node->name = function_name->str;
 		node->len = function_name->len;
-		node->type = new_type(INT, NULL);
+		node->type = new_type(INT, NULL, 4);
 		expect("(");
 		if( !consume(")") ){
 			expect("int");
 			tk = consume_kind( TK_IDENT );
-			tk->type = new_type(INT, NULL);
-			node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
+			node->statements_pointer[ arg_num++ ] = new_node_LVar( tk, new_type(INT, NULL, 4) );
 			while( consume(",") ){
 				expect("int");
 				tk = consume_kind( TK_IDENT );
-				tk->type = new_type(INT, NULL);
-				node->statements_pointer[ arg_num++ ] = new_node_LVar( tk );
+				node->statements_pointer[ arg_num++ ] = new_node_LVar( tk, new_type(INT, NULL, 4) );
 			}
-			consume(")");
+			expect(")");
 		}
 		node->val = arg_num;
 		code[i++] = node;
@@ -153,6 +153,10 @@ void program(){
 			code[i++] = stmt();
 		}
 		code[i++] = new_node(ND_FUNCEND, NULL, NULL);
+		if(lvar_max % 8 != 0){
+			lvar_max = (lvar_max / 8 + 1 ) * 8;
+		}
+		node->offset = lvar_max;
 	}
 	code[i++] = NULL;
 }
@@ -160,37 +164,25 @@ void program(){
 Node *stmt(){
 	Node *node;
 	if(consume_kind(TK_RETURN)){
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_RETURN;
-		node->lhs = expr();
-	}else if(consume_kind(TK_IF)){
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_IF;
-		node->rhs = calloc(1, sizeof(Node));//if文のブロック内のステートメントを指すためのnode
-	
+		node = new_node( ND_RETURN, expr(), NULL );
+	}else if(consume_kind(TK_IF)){	
 		expect("(");
-		node->lhs = expr();//条件文
+		node = new_node(ND_IF, expr(), NULL);//条件文
 		expect(")");
-		node->rhs->lhs = stmt();//turuの時に実行されるステートメント
+		node->rhs = new_node(ND_IF, stmt(), NULL);;//turuの時に実行されるステートメント
 		if(consume_kind(TK_ELSE)){
 			node->rhs->rhs = stmt();//falseの時に実行されるステートメント
 			node->kind = ND_IF_ELSE;
 		}
 		return node;
 	}else if(consume_kind(TK_WHILE)){
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_WHILE;
 		expect("(");
-		node->lhs = expr();//条件式
+		node = new_node(ND_WHILE, expr(), NULL);//条件式
 		expect(")");
 		node->rhs = stmt();//whileのブロック内の式
 		return node;
 	}else if(consume_kind(TK_FOR)){
-		node = calloc(1, sizeof(Node));
-		node->kind = ND_FOR;
-		node->lhs = calloc(1, sizeof(Node));//for文の初期化式とループごとに実行される式を指す。
-		node->rhs = calloc(1, sizeof(Node));//for文のブロック内のステートメントとループ条件式の2つの式を指す。
-
+		node = new_node(ND_FOR, new_node(ND_FOR,NULL,NULL), new_node(ND_FOR,NULL,NULL));
 		expect("(");
 		if(!consume(";")){
 			node->lhs->lhs = expr();//初期化の式
@@ -207,24 +199,28 @@ Node *stmt(){
 		node->rhs->rhs = stmt();//ループ内のステートメント
 		return node;
 	}else if(consume("{")){
-		int element_num = 0;
-		Node *node = calloc(1, sizeof(Node));
-		node->kind = ND_BLOCK;
+		int element_num = 1;
+		Node *node = new_node(ND_BLOCK, NULL, NULL);
 		node->statements_pointer[0] = stmt();
 		while(!consume("}")){
-			element_num += 1;
-			node->statements_pointer[element_num] = stmt();
+			node->statements_pointer[element_num++] = stmt();
 		}
-		node->statements_pointer[element_num+1] = NULL;
+		node->statements_pointer[element_num++] = NULL;
 		return node;
 	}else if(consume_kind(TK_INT)){
-		Type *type = new_type( INT, NULL );
+		int ele_num=0;
+		Type *type = new_type( INT, NULL, 4 );
 		while( consume("*") ){
-			type = new_type( PTR, type);
+			type = new_type( PTR, type, 4);
 		}
 		Token *tk = consume_kind(TK_IDENT);
-		tk->type = type;
-		node = new_node_LVar(tk);
+		if( consume("[") ){
+			ele_num = expect_number();
+			expect("]");
+			type = new_type(ARRAY, type, ele_num*4);
+		}
+		node = new_node_LVar(tk, type);
+		node->kind = ND_LVARDEF;
 	}else{
 		node = expr();
 	}
@@ -280,20 +276,20 @@ Node *add(){
 	for(;;){
 		if(consume("+")){
 			right_value = mul();
-			if( node->type->ty == PTR && right_value->type->ty == INT){
-				right_value->val = right_value->val*4;
+			if( (node->type->ty == PTR || node->type->ty == ARRAY) && right_value->type->ty == INT){
+				right_value = new_node( ND_MUL, right_value, new_node_num(4) );
 			}
-			if( node->type->ty == INT && right_value->type->ty == PTR){
-				node->val = node->val*4;
+			if( node->type->ty == INT && ( right_value->type->ty == PTR || right_value->type->ty == ARRAY)){
+				node = new_node( ND_MUL, node, new_node_num(4) );
 			}
 			node = new_node(ND_ADD, node, right_value);
 		}else if(consume("-")){
 			right_value = mul();
-			if( node->type->ty == PTR && right_value->type->ty == INT){
-				right_value->val = right_value->val*4;
+			if( (node->type->ty == PTR || node->type->ty == ARRAY) && right_value->type->ty == INT){
+				right_value = new_node( ND_MUL, right_value, new_node_num(4) );
 			}
-			if( node->type->ty == INT && right_value->type->ty == PTR){
-				node->val = node->val*4;
+			if( node->type->ty == INT && ( right_value->type->ty == PTR || right_value->type->ty == ARRAY) ){
+				node = new_node( ND_MUL, node, new_node_num(4) );
 			}
 			node = new_node(ND_SUB, node, right_value);
 		}else{
@@ -316,6 +312,7 @@ Node *mul(){
 }
 
 Node *unary(){
+	Node *node;
 	if(consume("+")){
 		return primary();
 	}
@@ -323,16 +320,21 @@ Node *unary(){
 		return new_node(ND_SUB, new_node_num(0), primary());
 	}
 	if(consume("*")){
-		return new_node(ND_DEREF, unary(), NULL);
+		node = new_node(ND_DEREF, unary(), NULL);
+		node->type = new_type( INT, NULL, 4);
+		return node;
 	}
 	if(consume("&")){
-		return new_node(ND_ADDR, unary(), NULL);
+		node = new_node(ND_ADDR, unary(), NULL);
+		node->type = new_type( PTR, node->type, 4);
+		return node;
 	}
 	if(consume_kind( TK_SIZEOF )){
-		Node *node = unary();
+		node = unary();
 		switch(node->type->ty){
 			case INT: return new_node_num(4);
 			case PTR: return new_node_num(4);
+			case ARRAY: return new_node_num(4*node->type->size);
 		}
 	}
 	return primary();
@@ -347,29 +349,30 @@ Node *primary(){
 	Token *tok = consume_kind(TK_IDENT);
 	if(tok){
 		if(consume("(")){
-			int i=0;
+			int i=1;
 			Node *node = new_node(ND_FUNCCALL, NULL, NULL);
 			node->name = tok->str;
 			node->len = tok->len;
-			node->type = new_type(INT, NULL);
+			node->type = new_type(INT, NULL, 4);
 			if(!consume(")")){
 				node->statements_pointer[0] = expr();
 				while(consume(",")){
-					i += 1;
-					node->statements_pointer[i] = expr();
+					node->statements_pointer[i++] = expr();
 				}
-				node->val = i+1;
+				node->val = i;
 				expect(")");
-				return node;
 			}else{
 				node->val = 0;
-				return node;
 			}	
+			return node;
 		}
 		if(!find_lvar(tok)){
 			error_at( tok->str, "定義されていない変数です\n" );
 		}
-		Node *node = new_node_LVar(tok);
+		Node *node = new_node_LVar(tok, NULL);
+		if(node->type->ty == ARRAY){
+			//node->type->ty = PTR;
+		}
 		return node;
 	}
 

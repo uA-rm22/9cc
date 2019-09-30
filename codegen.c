@@ -10,9 +10,9 @@ void gen_lval(Node *node){
 			error("代入の左辺値が変数ではありません");
 		}
 		printf("mov r0, fp\n");
-		printf("sub r0, r0, #%d\n", (lvar_max/2+lvar_max%2)*8 + 4 - node->offset*4);
+		printf("sub r0, r0, #%d\n",  node->offset + 8);
+		printf("push {r0}\n");
 	}
-	printf("push {r0}\n");
 }
 
 void gen(Node *node){
@@ -85,9 +85,10 @@ void gen(Node *node){
 		printf(":\n");
 		printf("str fp,[sp, #-4]!\n");//push fp
 		printf("add fp, sp, #0\n");
-		printf("sub sp, sp, #%d\n", (lvar_max/2+lvar_max%2)*8 + 4);
+
+		printf("sub sp, sp, #%d\n", node->offset + 4);
  		for( ele_num = 0; ele_num < node->val; ele_num++ ){
-			printf("str r%d, [fp, #%d]\n", ele_num, -((lvar_max/2+lvar_max%2)*8 + 4 - ele_num*4) );
+			printf("str r%d, [fp, #-%d]\n", ele_num,  ele_num*4 + 8 );
 		}
 		return;
 	case ND_FUNCEND:
@@ -119,11 +120,16 @@ void gen(Node *node){
 		printf("push {r0}\n");
 		return;
 	case ND_LVAR:
-		gen_lval(node);
-		printf("pop {r0}\n");
-		printf("ldr r0,[r0]\n");
-		printf("push {r0}\n");
-		return;
+		if(node->type->ty == ARRAY){
+			gen_lval(node);
+			return;
+		}else{
+			gen_lval(node);
+			printf("pop {r0}\n");
+			printf("ldr r0,[r0]\n");
+			printf("push {r0}\n");
+			return;
+		}
 	case ND_ASSIGN:
 		gen_lval(node->lhs);
 		gen(node->rhs);
@@ -141,6 +147,8 @@ void gen(Node *node){
 		printf("pop {r0}\n");
 		printf("ldr r0, [r0]\n");
 		printf("push {r0}\n");
+		return;
+	case ND_LVARDEF:
 		return;
 	}
 	gen(node->lhs);
